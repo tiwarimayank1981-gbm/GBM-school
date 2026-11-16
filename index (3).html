@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1e4d8c">
+<title>GBM सेकेंडरी स्कूल</title>
+<style>
+:root{--bg:#f6f4ee;--cd:#fff;--tx:#1f2430;--mu:#6b7280;--pr:#1e4d8c;--pt:#fff;--ok:#15803d;--no:#b91c1c;--bd:#e3dfd3}
+@media(prefers-color-scheme:dark){:root{--bg:#14171d;--cd:#1e222b;--tx:#eceef3;--mu:#9aa3b2;--pr:#6ea0e6;--pt:#0b1220;--ok:#4ade80;--no:#f87171;--bd:#323846}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,"Noto Sans Devanagari",sans-serif}
+header{background:var(--pr);color:var(--pt);padding:12px 16px;text-align:center}header h1{margin:0;font-size:19px}header p{margin:2px 0 0;font-size:12px;opacity:.9}
+main{max-width:640px;margin:0 auto;padding:12px}.cd{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+h2{font-size:17px;margin:0 0 10px}input,select,textarea,button{font:inherit;color:var(--tx)}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);margin-bottom:8px}
+button{background:var(--pr);color:var(--pt);border:0;border-radius:8px;padding:9px 13px;cursor:pointer}button.g{background:transparent;color:var(--pr);border:1px solid var(--pr)}button.d{background:var(--no);color:#fff}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}.tabs button{white-space:nowrap;background:var(--cd);color:var(--tx);border:1px solid var(--bd)}.tabs .on{background:var(--pr);color:var(--pt)}
+.r{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)}.r:last-child{border:0}.mu{color:var(--mu);font-size:13px}
+.pa{display:flex;gap:6px}.pa button{padding:6px 12px;background:var(--bg);color:var(--tx);border:1px solid var(--bd)}.pa .p.on{background:var(--ok);color:#fff}.pa .a.on{background:var(--no);color:#fff}
+.stat{display:flex;gap:8px}.stat div{flex:1;text-align:center;background:var(--bg);border-radius:8px;padding:8px}.stat b{display:block;font-size:19px}.err{color:var(--no);font-size:14px}
+</style></head><body>
+<header><h1>GBM सेकेंडरी स्कूल</h1><p>प्रधानाचार्य: श्रीमती गुड्डी शर्मा · प्रबंध निदेशक: श्री संतोष कुमार तिवारी</p><p id="st">● जुड़ रहे हैं…</p></header>
+<main id="app"></main>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import{getDatabase,ref,set,update,push,remove,onValue,get}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged,updatePassword}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+/* ===== सेटअप: Firebase Console > Project settings से अपनी असली config यहाँ चिपकाएँ ===== */
+const CFG={apiKey:"AIzaSyCPhpbxJ-erFYGWvBhDlCp5e114AWU5bFQ",authDomain:"gbm-secondary-school-2011.firebaseapp.com",databaseURL:"https://gbm-secondary-school-2011-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"gbm-secondary-school-2011",storageBucket:"gbm-secondary-school-2011.firebasestorage.app",messagingSenderId:"753096227415",appId:"1:753096227415:web:bc568e2b37ec69289b0112",measurementId:"G-ZJRWGKCXGS"};
+const EMAIL="principal@gbm-school.in"; /* Firebase Authentication में यही ईमेल बनाएँ; पासवर्ड = प्रधानाचार्य का पिन (6+ अंक) */
+const app=initializeApp(CFG),db=getDatabase(app),auth=getAuth(app);
+const $=i=>document.getElementById(i),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=n=>'₹'+(+n||0).toLocaleString('en-IN'),fd=d=>d.split('-').reverse().join('/'),ph=s=>String(s).replace(/\D/g,'').slice(-10),today=()=>new Date().toISOString().slice(0,10);
+const paid=s=>(s.paid||[]).reduce((a,p)=>a+(+p.a||0),0);
+let role=null,S=[],N=[],AD={},me=null,MA={},tab='st',date=today(),cls='',q='',msg='',offs=[],dayOff=null,pend=false;
+function sub(p,f){offs.push(onValue(ref(db,p),f,()=>{msg='नेटवर्क/अनुमति त्रुटि';draw()}))}
+function clear(){offs.forEach(f=>f());offs=[];dayOff&&dayOff();dayOff=null;S=[];AD={};me=null;MA={}}
+function draw(){const a=document.activeElement;if(a&&/INPUT|TEXTAREA/.test(a.tagName)&&a.dataset.f){pend=true;return}pend=false;$('app').innerHTML=role=='p'?pView():role=='g'?gView():login()}
+document.addEventListener('focusout',()=>setTimeout(()=>pend&&draw(),50));
+onValue(ref(db,'notices'),x=>{const v=x.val()||{};N=Object.entries(v).map(([id,n])=>({id,...n})).sort((a,b)=>b.ts-a.ts);$('st').textContent='● लाइव जुड़ा';draw()},()=>{$('st').textContent='● ऑफ़लाइन'});
+const nl=ed=>`<div class="cd"><h2>सूचनाएँ / दिशा-निर्देश</h2>${N.length?N.map(n=>`<div class="r"><div><b>${esc(n.title)}</b><div>${esc(n.body)}</div><div class="mu">${new Date(n.ts).toLocaleDateString('hi-IN')}</div></div>${ed?`<button class="d" onclick="delN('${n.id}')">हटाएँ</button>`:''}</div>`).join(''):'<p class="mu">कोई सूचना नहीं</p>'}</div>`;
+const login=()=>`<div class="cd"><h2>अभिभावक लॉगिन</h2><input id="lc" placeholder="विद्यार्थी कोड (स्कूल से मिला)" autocapitalize="characters"><input id="lm" placeholder="पंजीकृत मोबाइल नंबर" inputmode="numeric"><button onclick="pGo($('lc').value.trim().toUpperCase(),$('lm').value)">देखें</button></div>${nl(0)}<div class="cd"><h2>प्रधानाचार्य</h2><input id="lp" type="password" placeholder="पिन" inputmode="numeric"><button class="g" onclick="prGo()">प्रवेश</button></div>${msg?`<p class="err">${esc(msg)}</p>`:''}`;
+async function pGo(c,m,quiet){if(!c)return;try{const s=await get(ref(db,'students/'+c));if(s.exists()&&ph(s.val().phone)==ph(m)){role='g';try{localStorage.setItem('gp',c+'|'+m)}catch(e){}sub('students/'+c,x=>{me=x.val();draw()});sub('att/'+c,x=>{MA=x.val()||{};draw()});msg=''}else if(!quiet)msg='कोड या मोबाइल नंबर गलत है'}catch(e){if(!quiet)msg='जाँच नहीं हो सकी, इंटरनेट देखें'}draw()}
+async function prGo(){try{await signInWithEmailAndPassword(auth,EMAIL,$('lp').value.trim());msg=''}catch(e){msg='गलत पिन';draw()}}
+function out(){try{localStorage.removeItem('gp')}catch(e){}if(role=='p')signOut(auth);role=null;clear();draw()}
+onAuthStateChanged(auth,u=>{if(u){role='p';tab='st';sub('students',x=>{S=Object.entries(x.val()||{}).map(([id,s])=>({id,...s})).sort((a,b)=>(a.cls||'').localeCompare(b.cls||'')||(+a.roll||0)-(+b.roll||0));draw()});subDay()}draw()});
+function subDay(){dayOff&&dayOff();AD={};dayOff=onValue(ref(db,'attendance/'+date),x=>{AD=x.val()||{};draw()})}
+function gView(){const s=me;if(!s)return`<div class="cd">विवरण नहीं मिला। <button onclick="out()">वापस</button></div>`;const f=+s.fee||0,pd=paid(s),ds=Object.keys(MA).sort().reverse();let P=0,A=0;ds.forEach(d=>MA[d]=='P'?P++:A++);
+return`<div class="cd"><div class="r"><h2>${esc(s.name)}</h2><button class="g" onclick="out()">बाहर</button></div><div class="mu">कक्षा ${esc(s.cls)} · रोल ${esc(s.roll)} · अभिभावक: ${esc(s.father)}</div></div>
+<div class="cd"><h2>फ़ीस</h2><div class="stat"><div><b>${inr(f)}</b>कुल</div><div><b style="color:var(--ok)">${inr(pd)}</b>जमा</div><div><b style="color:var(--no)">${inr(f-pd)}</b>बकाया</div></div>${(s.paid||[]).map(p=>`<div class="r"><span>${fd(p.d)} <span class="mu">${esc(p.n)}</span></span><b>${inr(p.a)}</b></div>`).join('')}</div>
+<div class="cd"><h2>हाज़िरी</h2><div class="stat"><div><b style="color:var(--ok)">${P}</b>उपस्थित</div><div><b style="color:var(--no)">${A}</b>अनुपस्थित</div></div>${ds.slice(0,20).map(d=>`<div class="r"><span>${fd(d)}</span><b style="color:var(--${MA[d]=='P'?'ok':'no'})">${MA[d]=='P'?'उपस्थित':'अनुपस्थित'}</b></div>`).join('')}</div>${nl(0)}`}
+function pView(){const T=[['st','विद्यार्थी'],['at','हाज़िरी'],['fe','फ़ीस'],['no','सूचना'],['pn','पिन']];
+return`<div class="r"><b>प्रधानाचार्य पैनल</b><button class="g" onclick="out()">बाहर</button></div><div class="tabs">${T.map(t=>`<button class="${tab==t[0]?'on':''}" onclick="tab='${t[0]}';draw()">${t[1]}</button>`).join('')}</div>`+({st:stT,at:atT,fe:feT,no:noT,pn:pnT}[tab])()+(msg?`<p class="err">${esc(msg)}</p>`:'')}
+const flt=()=>S.filter(s=>!q||(s.name+s.cls+s.id).toLowerCase().includes(q.toLowerCase()));
+function stL(){const b=location.href.split('#')[0];return flt().map(s=>`<div class="r"><div><b>${esc(s.name)}</b><div class="mu">कक्षा ${esc(s.cls)} · रोल ${esc(s.roll)} · कोड: <b>${s.id}</b></div><a class="mu" target="_blank" href="https://wa.me/91${ph(s.phone)}?text=${encodeURIComponent('GBM स्कूल ऐप: '+b+'\nविद्यार्थी: '+s.name+'\nकोड: '+s.id+'\nमोबाइल: '+s.phone)}">WhatsApp पर भेजें</a></div><button class="d" onclick="delS('${s.id}')">हटाएँ</button></div>`).join('')}
+const stT=()=>`<div class="cd"><h2>नया विद्यार्थी</h2>${['नाम','कक्षा','रोल नंबर','अभिभावक का नाम','मोबाइल नंबर','कुल वार्षिक फ़ीस (₹)'].map((p,i)=>`<input id="n${i}" data-f=1 placeholder="${p}"${i>3?' inputmode="numeric"':''}>`).join('')}<button onclick="addS()">जोड़ें</button></div><div class="cd"><h2>सभी विद्यार्थी (${S.length})</h2><input data-f=1 placeholder="खोजें (नाम/कक्षा/कोड)" value="${esc(q)}" oninput="q=this.value;$('lst').innerHTML=stL()"><div id="lst">${stL()}</div></div>`;
+const addS=()=>{const v=[0,1,2,3,4,5].map(i=>$('n'+i).value.trim());if(!v[0]||ph(v[4]).length<10){msg='नाम और 10 अंक का मोबाइल ज़रूरी है';return draw()}const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=crypto.getRandomValues(new Uint8Array(8));let id='';r.forEach(x=>id+=a[x%32]);set(ref(db,'students/'+id),{name:v[0],cls:v[1],roll:v[2],father:v[3],phone:ph(v[4]),fee:+v[5]||0}).then(()=>{msg='';pend=false;draw()}).catch(()=>{msg='सेव नहीं हुआ';draw()})};
+const delS=id=>confirm('यह विद्यार्थी हटाएँ?')&&update(ref(db),{['students/'+id]:null,['att/'+id]:null});
+function atT(){const cl=[...new Set(S.map(s=>s.cls))],L=S.filter(s=>!cls||s.cls==cls);let P=0,A=0;L.forEach(s=>AD[s.id]=='P'?P++:AD[s.id]=='A'&&A++);
+return`<div class="cd"><h2>हाज़िरी</h2><input type="date" value="${date}" onchange="date=this.value;subDay();draw()"><select onchange="cls=this.value;draw()"><option value="">सभी कक्षाएँ</option>${cl.map(c=>`<option ${c==cls?'selected':''}>${esc(c)}</option>`).join('')}</select><div class="stat"><div><b>${L.length}</b>कुल</div><div><b style="color:var(--ok)">${P}</b>उपस्थित</div><div><b style="color:var(--no)">${A}</b>अनुपस्थित</div></div><br><button class="g" onclick="markAll()">सबको उपस्थित करें</button>${L.map(s=>`<div class="r"><span>${esc(s.name)} <span class="mu">${esc(s.cls)}</span></span><div class="pa"><button class="p ${AD[s.id]=='P'?'on':''}" onclick="mark('${s.id}','P')">उप.</button><button class="a ${AD[s.id]=='A'?'on':''}" onclick="mark('${s.id}','A')">अनु.</button></div></div>`).join('')}</div>`}
+const mark=(id,v)=>update(ref(db),{['attendance/'+date+'/'+id]:v,['att/'+id+'/'+date]:v});
+const markAll=()=>{if(!confirm('दिखाई दे रहे सभी विद्यार्थी "उपस्थित" करें?'))return;const u={};S.filter(s=>!cls||s.cls==cls).forEach(s=>{if(!AD[s.id]){u['attendance/'+date+'/'+s.id]='P';u['att/'+s.id+'/'+date]='P'}});update(ref(db),u)};
+function feL(){return flt().map(s=>{const d=(+s.fee||0)-paid(s);return`<div class="r"><div><b>${esc(s.name)}</b> <span class="mu">${esc(s.cls)}</span><div class="mu">कुल ${inr(s.fee)} · जमा ${inr(paid(s))} · <b style="color:var(--${d>0?'no':'ok'})">बकाया ${inr(d)}</b></div></div><div><button onclick="dep('${s.id}')">जमा</button> <button class="g" onclick="setFee('${s.id}')">कुल</button></div></div>`}).join('')}
+const feT=()=>`<div class="cd"><h2>फ़ीस प्रबंधन</h2><input data-f=1 placeholder="खोजें (नाम/कक्षा/कोड)" value="${esc(q)}" oninput="q=this.value;$('lst').innerHTML=feL()"><div id="lst">${feL()}</div></div>`;
+const dep=id=>{const a=+prompt('जमा राशि (₹)');if(!a)return;const s=S.find(x=>x.id==id);update(ref(db,'students/'+id),{paid:[...(s.paid||[]),{d:today(),a,n:prompt('टिप्पणी (जैसे अप्रैल की किस्त)')||''}]})};
+const setFee=id=>{const v=prompt('कुल वार्षिक फ़ीस (₹)');if(v!==null&&v!=='')update(ref(db,'students/'+id),{fee:+v})};
+const noT=()=>`<div class="cd"><h2>नई सूचना</h2><input id="nt" data-f=1 placeholder="शीर्षक"><textarea id="nb" data-f=1 rows="4" placeholder="सूचना / दिशा-निर्देश"></textarea><button onclick="addN()">सभी को भेजें</button></div>`+nl(1);
+const addN=()=>{const t=$('nt').value.trim();if(!t)return;push(ref(db,'notices'),{title:t,body:$('nb').value.trim(),ts:Date.now()}).then(()=>{pend=false;draw()})};
+const delN=id=>confirm('सूचना हटाएँ?')&&remove(ref(db,'notices/'+id));
+const pnT=()=>`<div class="cd"><h2>पिन बदलें</h2><input id="np" data-f=1 type="password" placeholder="नया पिन (कम से कम 6 अंक)" inputmode="numeric"><button onclick="setPin()">पिन बदलें</button></div>`;
+const setPin=()=>{const p=$('np').value.trim();if(p.length<6){msg='पिन कम से कम 6 अंक का हो';return draw()}updatePassword(auth.currentUser,p).then(()=>{msg='पिन बदल गया ✓';pend=false;draw()}).catch(()=>{msg='बदला नहीं। बाहर निकलकर दोबारा लॉगिन करें।';draw()})};
+Object.assign(window,{$,pGo,prGo,out,delS,addS,mark,markAll,dep,setFee,addN,delN,setPin,subDay,draw,stL,feL});
+Object.defineProperties(window,{tab:{get:()=>tab,set:v=>tab=v,configurable:true},q:{get:()=>q,set:v=>q=v,configurable:true},date:{get:()=>date,set:v=>date=v,configurable:true},cls:{get:()=>cls,set:v=>cls=v,configurable:true}});
+try{const l=localStorage.getItem('gp');if(l){const[c,m]=l.split('|');pGo(c,m,true)}}catch(e){}
+draw();
+</script></body></html>
